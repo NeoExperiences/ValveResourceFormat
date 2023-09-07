@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using SkiaSharp;
+using TinyEXR;
 using ValveResourceFormat.ResourceTypes;
 using ChannelMapping = ValveResourceFormat.CompiledShader.ChannelMapping;
 using ValveResourceFormat.IO.ContentFormats.ValveTexture;
@@ -82,6 +83,8 @@ public sealed class TextureExtract
             return new ContentFile() { Data = rawImage };
         }
 
+        Func<SKBitmap, byte[]> ImageEncoder = texture.IsHighDynamicRange ? ToExrImage : ToPngImage;
+
         //
         // Multiple images path
         //
@@ -105,8 +108,7 @@ public sealed class TextureExtract
 
                     contentFile.AddSubFile(outTextureName + extension, () =>
                     {
-                        // TODO: not png
-                        return EncodePng(texture.GenerateBitmap(depth: currentDepth));
+                        return ImageEncoder(texture.GenerateBitmap(depth: currentDepth));
                     });
 
                     continue;
@@ -119,9 +121,8 @@ public sealed class TextureExtract
 
                     contentFile.AddSubFile($"{outTextureName}_{CubemapNames[face]}{extension}", () =>
                     {
-                        // TODO: not png
                         using var bitmap = texture.GenerateBitmap(depth: currentDepth, face: (Texture.CubemapFace)currentFace);
-                        return EncodePng(bitmap);
+                        return ImageEncoder(bitmap);
                     });
                 }
             }
@@ -150,7 +151,7 @@ public sealed class TextureExtract
             return vtex;
         }
 
-        vtex.AddImageSubFile(Path.GetFileName(GetImageFileName()), ToPngImage);
+        vtex.AddImageSubFile(Path.GetFileName(GetImageFileName()), ImageEncoder);
         return vtex;
     }
 
@@ -175,6 +176,11 @@ public sealed class TextureExtract
 
     public static string GetImageOutputExtension(Texture texture)
     {
+        if (texture.IsHighDynamicRange)
+        {
+            return "exr";
+        }
+
         if (texture.IsRawJpeg)
         {
             return "jpeg";
@@ -416,6 +422,20 @@ public sealed class TextureExtract
     {
         using var png = pixels.Encode(SKPngEncoderOptions.Default);
         return png.ToArray();
+    }
+
+    public static byte[] ToExrImage(SKBitmap bitmap)
+    {
+        using var pixels = bitmap.PeekPixels();
+        return ToExrImage(pixels);
+    }
+
+    public static byte[] ToExrImage(SKPixmap pixels)
+    {
+        var writer = new ScanlineExrWriter();
+        writer.AddChannel("image", saveType: ExrPixelType.Float, pixels.GetPixelSpan().ToArray(), dataType: ExrPixelType.Float);
+        writer.SetSize(pixels.Width, pixels.Height);
+        return writer.Save();
     }
 
     public bool TryGetMksData(out Dictionary<SKRectI, string> sprites, out string mks)

@@ -372,6 +372,18 @@ namespace ValveResourceFormat.ResourceTypes
             return null;
         }
 
+        internal bool IsHighDynamicRange => Format is VTexFormat.BC6H
+            or VTexFormat.R16
+            or VTexFormat.RG1616
+            or VTexFormat.RGBA16161616
+            or VTexFormat.R16F
+            or VTexFormat.RG1616F
+            or VTexFormat.RGBA16161616F
+            or VTexFormat.R32F
+            or VTexFormat.RG3232F
+            or VTexFormat.RGB323232F
+            or VTexFormat.RGBA32323232F;
+
         internal bool IsRawJpeg => Format is VTexFormat.JPEG_DXT5 or VTexFormat.JPEG_RGBA8888;
         internal bool IsRawPng => Format is VTexFormat.PNG_DXT5 or VTexFormat.PNG_RGBA8888;
 
