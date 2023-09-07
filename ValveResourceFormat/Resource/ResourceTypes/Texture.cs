@@ -428,7 +428,6 @@ namespace ValveResourceFormat.ResourceTypes
             var blockWidth = MipLevelSize(Width, MipmapLevelToExtract);
             var blockHeight = MipLevelSize(Height, MipmapLevelToExtract);
 
-            var skiaBitmap = new SKBitmap(width, height, SKColorType.Bgra8888, SKAlphaType.Unpremul);
             ITextureDecoder decoder = null;
 
             switch (Format)
@@ -561,6 +560,10 @@ namespace ValveResourceFormat.ResourceTypes
                 throw new UnexpectedMagicException("Unhandled image type", (int)Format, nameof(Format));
             }
 
+            var colorType = decoder is IHdrDecoder ? SKColorType.RgbaF32 : SKColorType.Bgra8888;
+            var skiaBitmap = new SKBitmap(width, height, colorType, SKAlphaType.Unpremul);
+
+
             var uncompressedSize = CalculateBufferSizeForMipLevel(MipmapLevelToExtract);
             var buf = ArrayPool<byte>.Shared.Rent(uncompressedSize);
 
@@ -593,7 +596,14 @@ namespace ValveResourceFormat.ResourceTypes
                     span = span[faceOffset..(faceOffset + faceSize)];
                 }
 
-                decoder.Decode(skiaBitmap, span);
+                if (decoder is IHdrDecoder hdrTextureDecoder)
+                {
+                    hdrTextureDecoder.DecodeHdr(skiaBitmap, span);
+                }
+                else
+                {
+                    decoder.Decode(skiaBitmap, span);
+                }
             }
             finally
             {

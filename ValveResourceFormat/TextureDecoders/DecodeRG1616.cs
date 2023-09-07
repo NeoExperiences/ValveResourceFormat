@@ -3,8 +3,22 @@ using SkiaSharp;
 
 namespace ValveResourceFormat.TextureDecoders
 {
-    internal class DecodeRG1616 : ITextureDecoder
+    internal class DecodeRG1616 : ITextureDecoder, IHdrDecoder
     {
+        public void DecodeHdr(SKBitmap imageInfo, Span<byte> input)
+        {
+            using var pixels = imageInfo.PeekPixels();
+            var span = pixels.GetPixelSpan<SKColorF>();
+
+            for (int i = 0, j = 0; j < span.Length; i += 4, j++)
+            {
+                var hr = BitConverter.ToUInt16(input.Slice(i, 2)) / 256f;
+                var hg = BitConverter.ToUInt16(input.Slice(i + 2, 2)) / 256f;
+
+                span[j] = new SKColorF(hr, hg, 0f);
+            }
+        }
+
         public void Decode(SKBitmap res, Span<byte> input)
         {
             using var pixels = res.PeekPixels();

@@ -5,7 +5,7 @@ using SkiaSharp;
 
 namespace ValveResourceFormat.TextureDecoders
 {
-    internal class DecodeBC6H : CommonBPTC, ITextureDecoder
+    internal class DecodeBC6H : CommonBPTC, ITextureDecoder, IHdrDecoder
     {
         readonly int blockCountX;
         readonly int blockCountY;
@@ -16,10 +16,16 @@ namespace ValveResourceFormat.TextureDecoders
             blockCountY = (height + 3) / 4;
         }
 
+        public void DecodeHdr(SKBitmap bitmap, Span<byte> input)
+        {
+            Decode(bitmap, input);
+        }
+
         public void Decode(SKBitmap bitmap, Span<byte> input)
         {
             using var pixels = bitmap.PeekPixels();
-            var data = pixels.GetPixelSpan<byte>();
+            //var data = pixels.GetPixelSpan<byte>();
+            var data = pixels.GetPixelSpan<SKColorF>();
             var rowBytes = bitmap.RowBytes;
             var offset = 0;
 
@@ -323,15 +329,15 @@ namespace ValveResourceFormat.TextureDecoders
                                 ib >>= 3 - isAnchor;
                             }
 
-                            for (var e = 0; e < 3; e++)
-                            {
-                                var factor = BPTCInterpolateFactor(cweight, endpoints[subset, e], endpoints[subset + 1, e]);
-                                //gamma correction and mul 4
-                                factor = (ushort)Math.Min(0xFFFF, Math.Pow(factor / (float)((1U << 16) - 1), 2.2f) * ((1U << 16) - 1) * 4);
-                                data[pixelIndex + 2 - e] = (byte)(factor >> 8);
-                            }
+                            var factorRed = BPTCInterpolateFactor(cweight, endpoints[subset, 0], endpoints[subset + 1, 0]);
+                            var factorGreen = BPTCInterpolateFactor(cweight, endpoints[subset, 1], endpoints[subset + 1, 1]);
+                            var factorBlue = BPTCInterpolateFactor(cweight, endpoints[subset, 2], endpoints[subset + 1, 2]);
 
-                            data[pixelIndex + 3] = byte.MaxValue;
+                            data[pixelIndex % 16] = new SKColorF(
+                                factorRed / 256f,
+                                factorGreen / 256f,
+                                factorBlue / 256f
+                            );
                         }
                     }
                 }
