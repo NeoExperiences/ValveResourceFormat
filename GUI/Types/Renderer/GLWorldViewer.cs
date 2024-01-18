@@ -265,6 +265,7 @@ namespace GUI.Types.Renderer
 
             if (pickingResponse.Intent == PickingIntent.Select)
             {
+                /*
                 if (Keyboard.GetState().IsKeyDown(Key.ControlLeft))
                 {
                     selectedNodeRenderer.ToggleNode(sceneNode);
@@ -273,7 +274,7 @@ namespace GUI.Types.Renderer
                 {
                     selectedNodeRenderer.SelectNode(sceneNode);
                 }
-
+                */
                 return;
             }
 

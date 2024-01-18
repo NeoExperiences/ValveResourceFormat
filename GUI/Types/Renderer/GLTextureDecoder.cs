@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using GUI.Utils;
-using OpenTK;
-using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
+using OpenTK.Windowing.Common;
+using OpenTK.WinForms;
 using SkiaSharp;
 using ValveResourceFormat;
 using ValveResourceFormat.CompiledShader;
@@ -120,7 +120,17 @@ class GLTextureDecoder : IHardwareTextureDecoder, IDisposable
 
     private void Initialize()
     {
-        GLControl = new GLControl(new GraphicsMode(new ColorFormat(8, 8, 8, 8)), 4, 6, GraphicsContextFlags.Offscreen);
+        GLControl = new GLControl(new GLControlSettings
+        {
+            APIVersion = new(4, 6),
+            Flags = ContextFlags.Offscreen,
+            NumberOfSamples = 0,
+            DepthBits = 8,
+            RedBits = 8,
+            GreenBits = 8,
+            BlueBits = 8,
+            AlphaBits = 8,
+        });
         GLControl.MakeCurrent();
 
         GL.GetInternalformat(ImageTarget.Texture2D, SizedInternalFormat.Rgba8, InternalFormatParameter.InternalformatPreferred, 1, out int internalFormatPreferred);

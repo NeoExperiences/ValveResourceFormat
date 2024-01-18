@@ -4,13 +4,13 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
+using System.Numerics;
 using System.Windows.Forms;
 using GUI.Types.Renderer;
 using GUI.Utils;
-using OpenTK;
-using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
-using OpenTK.Input;
+using OpenTK.Windowing.Common;
+using OpenTK.WinForms;
 using SkiaSharp;
 using static GUI.Types.Renderer.PickingTexture;
 using WinFormsMouseEventArgs = System.Windows.Forms.MouseEventArgs;
@@ -54,13 +54,19 @@ namespace GUI.Controls
             Camera = new Camera();
 
             // Initialize GL control
-            var flags = GraphicsContextFlags.ForwardCompatible;
+            var flags = ContextFlags.ForwardCompatible;
 
 #if DEBUG
-            flags |= GraphicsContextFlags.Debug;
+            flags |= ContextFlags.Debug;
 #endif
 
-            GLControl = new GLControl(new GraphicsMode(32, 1, 0, 0, 0, 2), 4, 6, flags);
+            GLControl = new GLControl(new GLControlSettings
+            {
+                APIVersion = new(4, 6),
+                Flags = flags,
+                NumberOfSamples = 0,
+                DepthBits = 32,
+            });
             GLControl.Load += OnLoad;
             GLControl.Paint += OnPaint;
             GLControl.Resize += OnResize;
@@ -363,7 +369,7 @@ namespace GUI.Controls
         private void OnLoad(object sender, EventArgs e)
         {
             GLControl.MakeCurrent();
-            GLControl.VSync = Settings.Config.Vsync != 0;
+            //TODO: GLControl.VSync = Settings.Config.Vsync != 0;
 
             CheckOpenGL();
             MaxSamples = GL.GetInteger(GetPName.MaxSamples);
@@ -439,7 +445,7 @@ namespace GUI.Controls
 
             if (this is not GLTextureViewer)
             {
-                Camera.HandleInput(Mouse.GetState(), Keyboard.GetState());
+                //TODO: Camera.HandleInput(Mouse.GetState(), Keyboard.GetState());
                 Camera.Tick(frameTime);
             }
 
@@ -548,7 +554,7 @@ namespace GUI.Controls
 
         private void OnGotFocus(object sender, EventArgs e)
         {
-            if (!MainFramebuffer.HasValidDimensions())
+            if (MainFramebuffer is null || !MainFramebuffer.HasValidDimensions())
             {
                 return;
             }

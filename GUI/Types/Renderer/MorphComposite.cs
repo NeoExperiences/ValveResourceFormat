@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using GUI.Utils;
-using OpenTK;
 using OpenTK.Graphics.OpenGL;
+using OpenTK.Mathematics;
 using ValveResourceFormat.ResourceTypes;
 using ValveResourceFormat.Serialization;
 

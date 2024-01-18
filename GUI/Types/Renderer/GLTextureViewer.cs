@@ -832,7 +832,7 @@ namespace GUI.Types.Renderer
                 MainFramebuffer = GLDefaultFramebuffer;
             }
 
-            MainFramebuffer.ClearColor = OpenTK.Graphics.Color4.Green;
+            MainFramebuffer.ClearColor = OpenTK.Mathematics.Color4.Green;
             MainFramebuffer.ClearMask = ClearBufferMask.ColorBufferBit;
             GL.DepthMask(false);
             GL.Disable(EnableCap.DepthTest);

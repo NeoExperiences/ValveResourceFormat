@@ -314,7 +314,10 @@ namespace GUI.Types.Renderer
 
             var shaders = Directory.GetFiles(folder, "*.frag");
 
-            using var control = new OpenTK.GLControl(OpenTK.Graphics.GraphicsMode.Default, 4, 6, OpenTK.Graphics.GraphicsContextFlags.Default);
+            using var control = new OpenTK.WinForms.GLControl(new OpenTK.WinForms.GLControlSettings
+            {
+                APIVersion = new(4, 6)
+            });
             control.MakeCurrent();
 
             foreach (var shader in shaders)

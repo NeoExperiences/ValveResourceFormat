@@ -43,7 +43,7 @@ namespace GUI.Types.Renderer
         private Vector2 MouseDelta;
         private Vector2 MousePreviousPosition;
 
-        private KeyboardState KeyboardState;
+        //private KeyboardState KeyboardState;
 
         public Camera()
         {
@@ -181,7 +181,7 @@ namespace GUI.Types.Renderer
             {
                 return;
             }
-
+            /*
             if (KeyboardState.IsKeyDown(Key.ShiftLeft))
             {
                 // Camera truck and pedestal movement (blender calls this pan)
@@ -207,7 +207,7 @@ namespace GUI.Types.Renderer
                 Yaw -= MathF.PI * MouseDelta.X / WindowSize.X;
                 Pitch -= MathF.PI / AspectRatio * MouseDelta.Y / WindowSize.Y;
             }
-
+            */
             ClampRotation();
 
             RecalculateMatrices();
@@ -244,6 +244,7 @@ namespace GUI.Types.Renderer
             return SpeedModifiers[CurrentSpeedModifier];
         }
 
+        /*
         public void HandleInput(MouseState mouseState, KeyboardState keyboardState)
         {
             KeyboardState = keyboardState;
@@ -305,6 +306,7 @@ namespace GUI.Types.Renderer
                 Location += new Vector3(0, 0, speed);
             }
         }
+        */
 
         // Prevent camera from going upside-down
         private void ClampRotation()
