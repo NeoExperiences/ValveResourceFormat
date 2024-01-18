@@ -484,7 +484,7 @@ namespace GUI.Types.Renderer
                 e.IsInputKey = true;
             }
         }
-
+        /*
         protected override void OnKeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyData == (Keys.Control | Keys.S))
@@ -549,7 +549,7 @@ namespace GUI.Types.Renderer
 
             base.OnKeyDown(sender, e);
         }
-
+        */
         private void OnMouseMove(object sender, MouseEventArgs e)
         {
             if (ClickPosition == null)
@@ -571,7 +571,7 @@ namespace GUI.Types.Renderer
                 ClickPosition = Position + mousePosition;
             }
         }
-
+        /*
         protected override void OnMouseDown(object sender, MouseEventArgs e)
         {
             ClickPosition = Position + new Vector2(e.Location.X, e.Location.Y);
@@ -617,7 +617,7 @@ namespace GUI.Types.Renderer
                 Task.Run(GenerateNewSvgBitmap);
             }
         }
-
+        */
         private void ClampPosition()
         {
             var width = ActualTextureSizeScaled.X;

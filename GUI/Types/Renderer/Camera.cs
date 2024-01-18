@@ -2,6 +2,7 @@ using System;
 using System.Numerics;
 using GUI.Utils;
 using OpenTK.Input;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 
 namespace GUI.Types.Renderer
 {
@@ -40,10 +41,10 @@ namespace GUI.Types.Renderer
 
         public bool MouseDragging { get; private set; }
 
-        private Vector2 MouseDelta;
+        public Vector2 MouseDelta;
         private Vector2 MousePreviousPosition;
 
-        //private KeyboardState KeyboardState;
+        private KeyboardState KeyboardState;
 
         public Camera()
         {
@@ -181,8 +182,8 @@ namespace GUI.Types.Renderer
             {
                 return;
             }
-            /*
-            if (KeyboardState.IsKeyDown(Key.ShiftLeft))
+
+            if (KeyboardState.IsKeyDown(Keys.LeftShift))
             {
                 // Camera truck and pedestal movement (blender calls this pan)
                 var speed = AltMovementSpeed * deltaTime * SpeedModifiers[CurrentSpeedModifier];
@@ -190,7 +191,7 @@ namespace GUI.Types.Renderer
                 Location += GetUpVector() * speed * -MouseDelta.Y;
                 Location += GetRightVector() * speed * MouseDelta.X;
             }
-            else if (KeyboardState.IsKeyDown(Key.AltLeft))
+            else if (KeyboardState.IsKeyDown(Keys.LeftAlt))
             {
                 // Move forward or backwards when holding alt
                 var totalDelta = MouseDelta.X + (MouseDelta.Y * -1);
@@ -207,7 +208,9 @@ namespace GUI.Types.Renderer
                 Yaw -= MathF.PI * MouseDelta.X / WindowSize.X;
                 Pitch -= MathF.PI / AspectRatio * MouseDelta.Y / WindowSize.Y;
             }
-            */
+
+            MouseDelta = Vector2.Zero;
+
             ClampRotation();
 
             RecalculateMatrices();
@@ -244,12 +247,11 @@ namespace GUI.Types.Renderer
             return SpeedModifiers[CurrentSpeedModifier];
         }
 
-        /*
         public void HandleInput(MouseState mouseState, KeyboardState keyboardState)
         {
             KeyboardState = keyboardState;
-
-            if (MouseOverRenderArea && (mouseState.LeftButton == ButtonState.Pressed || mouseState.RightButton == ButtonState.Pressed))
+            /*
+            if (MouseOverRenderArea && (mouseState.IsButtonDown(MouseButton.Left) || mouseState.IsButtonDown(MouseButton.Right)))
             {
                 if (!MouseDragging)
                 {
@@ -265,48 +267,48 @@ namespace GUI.Types.Renderer
                 MousePreviousPosition = mouseNewCoords;
             }
 
-            if (!MouseOverRenderArea || !mouseState.IsConnected || (mouseState.LeftButton == ButtonState.Released && mouseState.RightButton == ButtonState.Released))
+            if (!MouseOverRenderArea || (mouseState.IsButtonReleased(MouseButton.Left) && mouseState.IsButtonReleased(MouseButton.Right)))
             {
                 MouseDragging = false;
                 MouseDelta = default;
             }
+            */
         }
 
         private void HandleKeyboardInput(float deltaTime)
         {
             var speed = MovementSpeed * deltaTime * SpeedModifiers[CurrentSpeedModifier];
 
-            if (KeyboardState.IsKeyDown(Key.W))
+            if (KeyboardState.IsKeyDown(Keys.W))
             {
                 Location += GetForwardVector() * speed;
             }
 
-            if (KeyboardState.IsKeyDown(Key.S))
+            if (KeyboardState.IsKeyDown(Keys.S))
             {
                 Location -= GetForwardVector() * speed;
             }
 
-            if (KeyboardState.IsKeyDown(Key.D))
+            if (KeyboardState.IsKeyDown(Keys.D))
             {
                 Location += GetRightVector() * speed;
             }
 
-            if (KeyboardState.IsKeyDown(Key.A))
+            if (KeyboardState.IsKeyDown(Keys.A))
             {
                 Location -= GetRightVector() * speed;
             }
 
-            if (KeyboardState.IsKeyDown(Key.Z))
+            if (KeyboardState.IsKeyDown(Keys.Z))
             {
                 Location += new Vector3(0, 0, -speed);
             }
 
-            if (KeyboardState.IsKeyDown(Key.Q))
+            if (KeyboardState.IsKeyDown(Keys.Q))
             {
                 Location += new Vector3(0, 0, speed);
             }
         }
-        */
 
         // Prevent camera from going upside-down
         private void ClampRotation()

@@ -10,10 +10,9 @@ using GUI.Types.Renderer;
 using GUI.Utils;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.Common;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 using OpenTK.WinForms;
 using SkiaSharp;
-using static GUI.Types.Renderer.PickingTexture;
-using WinFormsMouseEventArgs = System.Windows.Forms.MouseEventArgs;
 
 namespace GUI.Controls
 {
@@ -70,12 +69,6 @@ namespace GUI.Controls
             GLControl.Load += OnLoad;
             GLControl.Paint += OnPaint;
             GLControl.Resize += OnResize;
-            GLControl.MouseEnter += OnMouseEnter;
-            GLControl.MouseLeave += OnMouseLeave;
-            GLControl.MouseUp += OnMouseUp;
-            GLControl.MouseDown += OnMouseDown;
-            GLControl.MouseWheel += OnMouseWheel;
-            GLControl.KeyDown += OnKeyDown;
             GLControl.GotFocus += OnGotFocus;
             GLControl.VisibleChanged += OnVisibleChanged;
             Disposed += OnDisposed;
@@ -84,9 +77,9 @@ namespace GUI.Controls
             glControlContainer.Controls.Add(GLControl);
         }
 
-        protected virtual void OnKeyDown(object sender, KeyEventArgs e)
+        protected virtual void OnKeyDown(KeyboardKeyEventArgs e)
         {
-            if (e.KeyData == (Keys.Control | Keys.C))
+            if (e.Control && e.Key == OpenTK.Windowing.GraphicsLibraryFramework.Keys.C)
             {
                 var title = Program.MainForm.Text;
                 Program.MainForm.Text = "Source 2 Viewer - Copying image to clipboard…";
@@ -114,7 +107,7 @@ namespace GUI.Controls
 
                 return;
             }
-
+            /*
             if ((e.KeyCode == Keys.Escape || e.KeyCode == Keys.F11) && FullScreenForm != null)
             {
                 FullScreenForm.Close();
@@ -136,7 +129,7 @@ namespace GUI.Controls
                 FullScreenForm.Show();
                 FullScreenForm.Focus();
                 FullScreenForm.FormClosed += OnFullScreenFormClosed;
-            }
+            }*/
         }
 
         private void OnFullScreenFormClosed(object sender, EventArgs e)
@@ -257,12 +250,14 @@ namespace GUI.Controls
             GLControl.Load -= OnLoad;
             GLControl.Paint -= OnPaint;
             GLControl.Resize -= OnResize;
+            /*
             GLControl.MouseEnter -= OnMouseEnter;
             GLControl.MouseLeave -= OnMouseLeave;
             GLControl.MouseUp -= OnMouseUp;
             GLControl.MouseDown -= OnMouseDown;
             GLControl.MouseWheel -= OnMouseWheel;
             GLControl.KeyDown -= OnKeyDown;
+            */
             GLControl.GotFocus -= OnGotFocus;
             GLControl.VisibleChanged -= OnVisibleChanged;
             Disposed -= OnDisposed;
@@ -277,19 +272,51 @@ namespace GUI.Controls
             }
         }
 
-        private void OnMouseLeave(object sender, EventArgs e)
+        private void OnMouseLeave()
         {
             Camera.MouseOverRenderArea = false;
         }
 
-        private void OnMouseEnter(object sender, EventArgs e)
+        private void OnMouseEnter()
         {
             Camera.MouseOverRenderArea = true;
         }
 
-        protected virtual void OnMouseDown(object sender, WinFormsMouseEventArgs e)
+        private void OnMouseMove(MouseMoveEventArgs e)
         {
-            if (e.Button == MouseButtons.Left)
+            if (Camera.MouseOverRenderArea && (nativeInput.IsMouseButtonDown(MouseButton.Left) || nativeInput.IsMouseButtonDown(MouseButton.Right)))
+            {
+                Camera.MouseDelta += new Vector2(e.DeltaX, e.DeltaY);
+
+                var cursor = GLControl.PointToScreen(new Point((int)nativeInput.MousePosition.X, (int)nativeInput.MousePosition.Y));
+                var topLeft = GLControl.PointToScreen(Point.Empty);
+                var bottomRight = topLeft + GLControl.Size;
+
+                if (cursor.X < topLeft.X)
+                {
+                    System.Windows.Forms.Cursor.Position = new Point(bottomRight.X, cursor.Y);
+                }
+                else if (cursor.X > bottomRight.X)
+                {
+                    System.Windows.Forms.Cursor.Position = new Point(topLeft.X, cursor.Y);
+                }
+
+                if (cursor.Y < topLeft.Y)
+                {
+                    System.Windows.Forms.Cursor.Position = new Point(cursor.X, bottomRight.Y);
+                }
+                else if (cursor.Y > bottomRight.Y)
+                {
+                    System.Windows.Forms.Cursor.Position = new Point(cursor.X, topLeft.Y);
+                }
+            }
+        }
+
+        protected virtual void OnMouseDown(MouseButtonEventArgs e)
+        {
+            var cursor = nativeInput.MousePosition;
+            /*
+            if (e.Button == OpenTK.Windowing.GraphicsLibraryFramework.MouseButton.Left)
             {
                 initialMousePosition = new Vector2(e.X, e.Y);
                 if (e.Clicks == 2)
@@ -300,7 +327,6 @@ namespace GUI.Controls
                     Camera.Picker?.Request.NextFrame(e.X, e.Y, intent);
                 }
             }
-            /* TODO: phase this obscure bind out */
             else if (e.Button == MouseButtons.Right)
             {
                 initialMousePosition = new Vector2(e.X, e.Y);
@@ -309,28 +335,31 @@ namespace GUI.Controls
                     Camera.Picker?.Request.NextFrame(e.X, e.Y, PickingIntent.Open);
                 }
             }
+            */
         }
 
-        protected virtual void OnMouseUp(object sender, WinFormsMouseEventArgs e)
+        protected virtual void OnMouseUp(MouseButtonEventArgs e)
         {
-            if (initialMousePosition != new Vector2(e.X, e.Y))
+            var cursor = nativeInput.MousePosition;
+
+            if (initialMousePosition != new Vector2(cursor.X, cursor.Y))
             {
                 return;
             }
 
-            if (e.Button == MouseButtons.Left)
+            if (e.Button == OpenTK.Windowing.GraphicsLibraryFramework.MouseButton.Left)
             {
-                Camera.Picker?.Request.NextFrame(e.X, e.Y, PickingIntent.Select);
+                //Camera.Picker?.Request.NextFrame(cursor.X, cursor.Y, PickingIntent.Select);
             }
-            else if (e.Button == MouseButtons.Right)
+            else if (e.Button == OpenTK.Windowing.GraphicsLibraryFramework.MouseButton.Right)
             {
                 // right click context menu?
             }
         }
 
-        protected virtual void OnMouseWheel(object sender, WinFormsMouseEventArgs e)
+        protected virtual void OnMouseWheel(MouseWheelEventArgs e)
         {
-            var modifier = Camera.ModifySpeed(e.Delta > 0);
+            var modifier = Camera.ModifySpeed(e.OffsetY > 0);
 
             SetMoveSpeedOrZoomLabel($"Move speed: {modifier:0.0}x (scroll to change)");
         }
@@ -364,12 +393,23 @@ namespace GUI.Controls
         public Framebuffer GLDefaultFramebuffer;
         public Framebuffer MainFramebuffer;
         private int MaxSamples;
+        private INativeInput nativeInput;
+
         private int NumSamples => Math.Max(1, Math.Min(Settings.Config.AntiAliasingSamples, MaxSamples));
 
         private void OnLoad(object sender, EventArgs e)
         {
             GLControl.MakeCurrent();
             //TODO: GLControl.VSync = Settings.Config.Vsync != 0;
+
+            nativeInput = GLControl.EnableNativeInput();
+            nativeInput.MouseMove += OnMouseMove;
+            nativeInput.MouseEnter += OnMouseEnter;
+            nativeInput.MouseLeave += OnMouseLeave;
+            nativeInput.MouseUp += OnMouseUp;
+            nativeInput.MouseDown += OnMouseDown;
+            nativeInput.MouseWheel += OnMouseWheel;
+            nativeInput.KeyDown += OnKeyDown;
 
             CheckOpenGL();
             MaxSamples = GL.GetInteger(GetPName.MaxSamples);
@@ -445,33 +485,8 @@ namespace GUI.Controls
 
             if (this is not GLTextureViewer)
             {
-                //TODO: Camera.HandleInput(Mouse.GetState(), Keyboard.GetState());
+                Camera.HandleInput(nativeInput.MouseState, nativeInput.KeyboardState);
                 Camera.Tick(frameTime);
-            }
-
-            if (Camera.MouseDragging)
-            {
-                var cursor = Cursor.Position;
-                var topLeft = GLControl.PointToScreen(Point.Empty);
-                var bottomRight = topLeft + GLControl.Size;
-
-                if (cursor.X < topLeft.X)
-                {
-                    Cursor.Position = new Point(bottomRight.X, cursor.Y);
-                }
-                else if (cursor.X > bottomRight.X)
-                {
-                    Cursor.Position = new Point(topLeft.X, cursor.Y);
-                }
-
-                if (cursor.Y < topLeft.Y)
-                {
-                    Cursor.Position = new Point(cursor.X, bottomRight.Y);
-                }
-                else if (cursor.Y > bottomRight.Y)
-                {
-                    Cursor.Position = new Point(cursor.X, topLeft.Y);
-                }
             }
 
             GLPaint?.Invoke(this, new RenderEventArgs { FrameTime = frameTime });
