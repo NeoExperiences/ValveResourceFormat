@@ -69,7 +69,14 @@ namespace Tests
         {
             var exampleStr = "07 00 00 80 3F 04 0A 00 12 00 07 00 00 00 40 02 17 00 07 00 00 40 40 00";
             var expectedResult = "return 1 ? 2 : 3;";
-            Assert.That(new VfxEval(ParseString(exampleStr)).DynamicExpressionResult, Is.EqualTo(expectedResult));
+            var eval = new VfxEval(ParseString(exampleStr));
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(eval.Invokable(), Is.EqualTo(2f));
+                Assert.That(eval.DynamicExpressionResult, Is.EqualTo(expectedResult));
+            });
+
         }
 
         /*

@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.IO;
+using System.Linq.Expressions;
 using ValveResourceFormat.ThirdParty;
 using ValveResourceFormat.Utils;
 
@@ -133,6 +134,8 @@ namespace ValveResourceFormat.Serialization.VfxEval
         private const uint OR_BRANCH = 2;         //    <e1> || <e2>
 
         private readonly Stack<string> Expressions = new();
+        public Stack<Expression> DotNetExpressions = new();
+
 
         // check on each OPS if we are exiting a branch,
         // when we do we should combine expressions on the stack
@@ -148,11 +151,14 @@ namespace ValveResourceFormat.Serialization.VfxEval
 
         private readonly IReadOnlyList<string> Features;
 
+        public Func<float> Invokable { get; private set; }
+
         public VfxEval(byte[] binaryBlob, bool omitReturnStatement = false, IReadOnlyList<string> features = null)
         {
             OmitReturnStatement = omitReturnStatement;
             Features = features;
             ParseExpression(binaryBlob);
+            Invokable = Expression.Lambda<Func<float>>(DotNetExpressions.Pop()).Compile();
         }
 
         public VfxEval(byte[] binaryBlob, IReadOnlyList<string> renderAttributesUsed, bool omitReturnStatement = false, IReadOnlyList<string> features = null)
@@ -211,6 +217,14 @@ namespace ValveResourceFormat.Serialization.VfxEval
                             // string expConditional = $"({Trimbrackets(exp1)} ? {Trimbrackets(exp2)} : {Trimbrackets(exp3)})";
                             var expConditional = $"({exp1} ? {exp2} : {exp3})";
                             Expressions.Push(expConditional);
+
+                            var netExp3 = DotNetExpressions.Pop();
+                            var netExp2 = DotNetExpressions.Pop();
+                            var netExp1 = DotNetExpressions.Pop();
+
+                            var boolExpression = Expression.NotEqual(netExp1, Expression.Constant(0f));
+
+                            DotNetExpressions.Push(Expression.Condition(boolExpression, netExp2, netExp3));
                         }
                         break;
 
@@ -224,6 +238,10 @@ namespace ValveResourceFormat.Serialization.VfxEval
                             var exp1 = Expressions.Pop();
                             var expAndConditional = $"({exp1} && {exp2})";
                             Expressions.Push(expAndConditional);
+
+                            var netExp2 = DotNetExpressions.Pop();
+                            var netExp1 = DotNetExpressions.Pop();
+                            DotNetExpressions.Push(Expression.AndAlso(netExp1, netExp2));
                         }
                         break;
 
@@ -237,6 +255,10 @@ namespace ValveResourceFormat.Serialization.VfxEval
                             var exp1 = Expressions.Pop();
                             var expOrConditional = $"({exp1} || {exp2})";
                             Expressions.Push(expOrConditional);
+
+                            var netExp2 = DotNetExpressions.Pop();
+                            var netExp1 = DotNetExpressions.Pop();
+                            DotNetExpressions.Push(Expression.OrElse(netExp1, netExp2));
                         }
                         break;
 
@@ -303,6 +325,8 @@ namespace ValveResourceFormat.Serialization.VfxEval
                 }
 
                 ApplyFunction(funcName, nrArguments);
+
+                DotNetExpressions.Push(Expression.Parameter(typeof(float), "FunctionCallImplementMe" + Expressions.Peek()));
                 return;
             }
 
@@ -316,6 +340,7 @@ namespace ValveResourceFormat.Serialization.VfxEval
                     floatLiteral = floatLiteral[1..];
                 }
                 Expressions.Push(floatLiteral);
+                DotNetExpressions.Push(Expression.Constant(floatVal));
                 return;
             }
 
@@ -327,6 +352,8 @@ namespace ValveResourceFormat.Serialization.VfxEval
                 var exp = Expressions.Pop();
                 var assignExpression = $"{locVarname} = {Trimbrackets(exp)};";
                 DynamicExpressionList.Add(assignExpression);
+
+                DotNetExpressions.Push(Expression.Assign(Expression.Variable(typeof(float), locVarname), DotNetExpressions.Pop()));
                 return;
             }
 
@@ -335,6 +362,8 @@ namespace ValveResourceFormat.Serialization.VfxEval
                 var varId = dataReader.ReadByte();
                 var locVarname = GetLocalVarName(varId);
                 Expressions.Push(locVarname);
+
+                DotNetExpressions.Push(Expression.Variable(typeof(float), locVarname));
                 return;
             }
 
@@ -342,6 +371,8 @@ namespace ValveResourceFormat.Serialization.VfxEval
             {
                 var exp = Expressions.Pop();
                 Expressions.Push($"!{exp}");
+
+                DotNetExpressions.Push(Expression.Not(DotNetExpressions.Pop()));
                 return;
             }
 
@@ -354,6 +385,25 @@ namespace ValveResourceFormat.Serialization.VfxEval
                 var exp2 = Expressions.Pop();
                 var exp1 = Expressions.Pop();
                 Expressions.Push($"({exp1}{OpCodeToSymbol[op]}{exp2})");
+
+                var netExp2 = DotNetExpressions.Pop();
+                var netExp1 = DotNetExpressions.Pop();
+
+                DotNetExpressions.Push(op switch
+                {
+                    OPCODE.EQUALS => Expression.Equal(netExp1, netExp2),
+                    OPCODE.NEQUALS => Expression.NotEqual(netExp1, netExp2),
+                    OPCODE.GT => Expression.GreaterThan(netExp1, netExp2),
+                    OPCODE.GTE => Expression.GreaterThanOrEqual(netExp1, netExp2),
+                    OPCODE.LT => Expression.LessThan(netExp1, netExp2),
+                    OPCODE.LTE => Expression.LessThanOrEqual(netExp1, netExp2),
+                    OPCODE.ADD => Expression.Add(netExp1, netExp2),
+                    OPCODE.SUB => Expression.Subtract(netExp1, netExp2),
+                    OPCODE.MUL => Expression.Multiply(netExp1, netExp2),
+                    OPCODE.DIV => Expression.Divide(netExp1, netExp2),
+                    OPCODE.MODULO => Expression.Modulo(netExp1, netExp2),
+                    _ => throw new InvalidDataException($"Error parsing dynamic expression, unknown opcode = 0x{(int)op:x2} (position: {dataReader.BaseStream.Position})"),
+                });
                 return;
             }
 
@@ -361,6 +411,8 @@ namespace ValveResourceFormat.Serialization.VfxEval
             {
                 var exp = Expressions.Pop();
                 Expressions.Push($"-{exp}");
+
+                DotNetExpressions.Push(Expression.Negate(DotNetExpressions.Pop()));
                 return;
             }
 
@@ -369,13 +421,15 @@ namespace ValveResourceFormat.Serialization.VfxEval
                 var varId = dataReader.ReadUInt32();
                 var extVarname = GetExternalVarName(varId);
                 Expressions.Push(extVarname);
+                DotNetExpressions.Push(Expression.Parameter(typeof(float), extVarname));
                 return;
             }
 
             if (op == OPCODE.COND)
             {
-                uint expressionId = dataReader.ReadByte();
-                Expressions.Push((Features is null) ? $"COND[{expressionId}]" : Features[(int)expressionId]);
+                uint featureId = dataReader.ReadByte();
+                Expressions.Push((Features is null) ? $"COND[{featureId}]" : Features[(int)featureId]);
+                DotNetExpressions.Push(Expression.Parameter(typeof(float), $"F_FEATURE{featureId}"));
                 return;
             }
 
@@ -391,14 +445,19 @@ namespace ValveResourceFormat.Serialization.VfxEval
                 {
                     Expressions.Push($"EVAL[{intval:x08}]");
                 }
+
+                DotNetExpressions.Push(Expression.Parameter(typeof(float), $"EVAL_murmur{intval}"));
                 return;
             }
 
             if (op == OPCODE.SWIZZLE)
             {
                 var exp = Expressions.Pop();
-                exp += $".{GetSwizzle(dataReader.ReadByte())}";
+                var swizzle = GetSwizzle(dataReader.ReadByte());
+                exp += '.' + swizzle;
                 Expressions.Push($"{exp}");
+
+                DotNetExpressions.Push(Expression.Property(DotNetExpressions.Pop(), swizzle));
                 return;
             }
 
@@ -407,6 +466,8 @@ namespace ValveResourceFormat.Serialization.VfxEval
                 var varId = dataReader.ReadUInt32();
                 var extVarname = GetExternalVarName(varId);
                 Expressions.Push($"exists({extVarname})");
+
+                DotNetExpressions.Push(Expression.Parameter(typeof(float), Expressions.Peek()));
                 return;
             }
 
@@ -427,6 +488,8 @@ namespace ValveResourceFormat.Serialization.VfxEval
                 {
                     DynamicExpressionList.Add($"return {finalExp};");
                 }
+
+                //DotNetExpressions.Push(Expression.Return<float>(Expression.Label(), DotNetExpressions.Pop()));
                 return;
             }
 
@@ -470,16 +533,24 @@ namespace ValveResourceFormat.Serialization.VfxEval
             throw new InvalidDataException($"Error parsing dynamic expression, unexpected number of arguments ({nrArguments}) for function ${funcName}");
         }
 
-        private static string GetSwizzle(byte b)
+        private static string GetSwizzle(byte packedSwizzle, bool trimmed = true)
         {
-            string[] axes = ["x", "y", "z", "w"];
-            var swizzle = axes[b & 3] + axes[(b >> 2) & 3] + axes[(b >> 4) & 3] + axes[(b >> 6) & 3];
-            var i = 3;
-            while (i > 0 && swizzle[i - 1] == swizzle[i])
+            const int MaxLength = 4;
+            Span<char> chars = stackalloc char[MaxLength];
+            Span<char> axes = ['x', 'y', 'z', 'w'];
+
+            for (var i = 0; i < MaxLength; i++)
             {
-                i--;
+                chars[i] = axes[(packedSwizzle >> (i * 2)) & 3];
             }
-            return swizzle[0..(i + 1)];
+
+            var length = MaxLength;
+            while (trimmed && length > 1 && chars[length - 1] == chars[length - 2])
+            {
+                length--;
+            }
+
+            return chars[..length].ToString();
         }
 
         // The decompiler has a tendency to accumulate brackets so we trim them in places where
