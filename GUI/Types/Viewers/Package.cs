@@ -315,15 +315,8 @@ namespace GUI.Types.Viewers
                             // Use input dependency as the file name if there is one
                             if (resource.EditInfo != null)
                             {
-                                if (resource.EditInfo.Structs.TryGetValue(ResourceEditInfo.REDIStruct.InputDependencies, out var inputBlock))
-                                {
-                                    filepath = RecoverDeletedFilesGetPossiblePath((InputDependencies)inputBlock, resourceTypeExtensionWithDot);
-                                }
-
-                                if (filepath == null && resource.EditInfo.Structs.TryGetValue(ResourceEditInfo.REDIStruct.AdditionalInputDependencies, out inputBlock))
-                                {
-                                    filepath = RecoverDeletedFilesGetPossiblePath((InputDependencies)inputBlock, resourceTypeExtensionWithDot);
-                                }
+                                filepath = RecoverDeletedFilesGetPossiblePath(resource.EditInfo.InputDependencies, resourceTypeExtensionWithDot);
+                                filepath ??= RecoverDeletedFilesGetPossiblePath(resource.EditInfo.AdditionalInputDependencies, resourceTypeExtensionWithDot);
 
                                 // Fix panorama extension
                                 if (filepath != null && resourceTypeExtensionWithDot == ".vtxt")
@@ -417,14 +410,14 @@ namespace GUI.Types.Viewers
             return hiddenFiles;
         }
 
-        private static string RecoverDeletedFilesGetPossiblePath(InputDependencies inputDeps, string resourceTypeExtensionWithDot)
+        private static string RecoverDeletedFilesGetPossiblePath(IReadOnlyList<InputDependency> inputDeps, string resourceTypeExtensionWithDot)
         {
-            if (inputDeps.List.Count == 0)
+            if (inputDeps.Count == 0)
             {
                 return null;
             }
 
-            foreach (var inputDependency in inputDeps.List)
+            foreach (var inputDependency in inputDeps)
             {
                 if (Path.GetExtension(inputDependency.ContentRelativeFilename) == resourceTypeExtensionWithDot)
                 {
@@ -444,7 +437,7 @@ namespace GUI.Types.Viewers
                     ".vts",
                 };
 
-                foreach (var inputDependency in inputDeps.List)
+                foreach (var inputDependency in inputDeps)
                 {
                     if (preferredExtensions.Contains(Path.GetExtension(inputDependency.ContentRelativeFilename)))
                     {
@@ -453,7 +446,7 @@ namespace GUI.Types.Viewers
                 }
             }
 
-            return inputDeps.List[0].ContentRelativeFilename;
+            return inputDeps[0].ContentRelativeFilename;
         }
 
         private void VPK_Disposed(object sender, EventArgs e)
