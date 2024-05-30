@@ -383,58 +383,57 @@ bool HandleMaterialRenderModes(MaterialProperties_t mat, inout vec4 outputColor)
 {
     if (g_iRenderMode == renderMode_FullBright)
     {
-        vec3 fullbrightLighting = CalculateFullbrightLighting(mat.Albedo, mat.Normal, mat.ViewDir);
-        outputColor.rgb = SrgbLinearToGamma(fullbrightLighting);
+        outputColor.rgb = CalculateFullbrightLighting(mat.Albedo, mat.Normal, mat.ViewDir);
         return true;
     }
     else if (g_iRenderMode == renderMode_Color)
     {
-        outputColor = vec4(SrgbLinearToGamma(mat.Albedo), 1.0);
+        outputColor.rgb = mat.Albedo;
         return true;
     }
     else if (g_iRenderMode == renderMode_BumpMap)
     {
-        outputColor = vec4(PackToColor(mat.NormalMap), 1.0);
+        outputColor.rgb = SrgbGammaToLinear(PackToColor(mat.NormalMap));
         return true;
     }
     else if (g_iRenderMode == renderMode_Tangents)
     {
-        outputColor = vec4(PackToColor(mat.Tangent), 1.0);
+        outputColor.rgb = SrgbGammaToLinear(PackToColor(mat.Tangent));
         return true;
     }
     else if (g_iRenderMode == renderMode_Normals)
     {
-        outputColor = vec4(PackToColor(mat.GeometricNormal), 1.0);
+        outputColor.rgb = SrgbGammaToLinear(PackToColor(mat.GeometricNormal));
         return true;
     }
     else if (g_iRenderMode == renderMode_BumpNormals)
     {
-        outputColor = vec4(PackToColor(mat.Normal), 1.0);
+        outputColor.rgb = SrgbGammaToLinear(PackToColor(mat.Normal));
         return true;
     }
     else if (g_iRenderMode == renderMode_Occlusion)
     {
-        outputColor.rgb = mat.AmbientOcclusion.xxx;
+        outputColor.rgb = SrgbGammaToLinear(mat.AmbientOcclusion.xxx);
         return true;
     }
     else if (g_iRenderMode == renderMode_Roughness)
     {
         #if defined(VEC2_ROUGHNESS)
-            outputColor.rgb = vec3(mat.RoughnessTex.xy, 0.0);
+            outputColor.rgb = SrgbGammaToLinear(vec3(mat.RoughnessTex.xy, 0.0));
         #else
-            outputColor.rgb = mat.RoughnessTex.xxx;
+            outputColor.rgb = SrgbGammaToLinear(mat.RoughnessTex.xxx);
         #endif
 
         return true;
     }
     else if (g_iRenderMode == renderMode_Metalness)
     {
-        outputColor.rgb = mat.Metalness.xxx;
+        outputColor.rgb = SrgbGammaToLinear(mat.Metalness.xxx);
         return true;
     }
     else if (g_iRenderMode == renderMode_ExtraParams)
     {
-        outputColor.rgb = mat.ExtraParams.rgb;
+        outputColor.rgb = SrgbGammaToLinear(mat.ExtraParams.rgb);
         return true;
     }
 

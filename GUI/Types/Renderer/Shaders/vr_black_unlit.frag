@@ -15,6 +15,5 @@ void main(void) {
     if (g_bFogEnabled)
     {
         ApplyFog(outputColor.rgb, vFragPosition);
-        outputColor.rgb = SrgbLinearToGamma(outputColor.rgb);
     }
 }

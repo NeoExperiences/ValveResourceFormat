@@ -417,6 +417,7 @@ namespace GUI.Controls
 
             // Application semantics / default state
             GL.Enable(EnableCap.TextureCubeMapSeamless);
+            GL.Enable(EnableCap.FramebufferSrgb);
             GL.Enable(EnableCap.CullFace);
             GL.CullFace(CullFaceMode.Back);
             GL.Enable(EnableCap.DepthTest);

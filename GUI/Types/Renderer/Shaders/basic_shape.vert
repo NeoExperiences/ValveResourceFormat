@@ -9,11 +9,12 @@ out vec3 vtxPos;
 
 out vec3 camPos;
 
+#include "common/utils.glsl"
 #include "common/ViewConstants.glsl"
 uniform mat4 transform;
 
 void main(void) {
-    vtxColor = aVertexColor;
+    vtxColor = SrgbGammaToLinear(aVertexColor);
     vtxNormal = aVertexNormal;
     vtxPos = aVertexPosition;
 

@@ -6,13 +6,14 @@
 #define renderMode_Color 0
 #define renderMode_SpriteEffects 0
 #define renderMode_Tint 0
+#define renderMode_VertexColor 0
 
 in vec3 vFragPosition;
 in vec3 vNormalOut;
 in vec3 vTangentOut;
 in vec3 vBitangentOut;
 in vec2 vTexCoordOut;
-in vec4 vColorOut;
+in vec4 vVertexColorOut;
 
 out vec4 outputColor;
 
@@ -89,10 +90,10 @@ void main()
     fade = mix(g_flFadeMin, g_flFadeMax, 1.0 - fade);
     fade = saturate(fade);
 
-    opacity = opacity * fresnel * fade * vColorOut.a;
+    opacity = opacity * fresnel * fade * vVertexColorOut.a;
 
     outputColor = vec4(
-        color.rgb * tintColor * g_flColorBoost * vColorOut.rgb,
+        color.rgb * tintColor * g_flColorBoost * vVertexColorOut.rgb,
         opacity
     );
 
@@ -104,10 +105,14 @@ void main()
     }
     else if (g_iRenderMode == renderMode_Tint)
     {
-        outputColor = vColorOut;
+        outputColor = vec4(tintColor, 1);
+    }
+    else if (g_iRenderMode == renderMode_VertexColor)
+    {
+        outputColor = vVertexColorOut;
     }
     else if (g_iRenderMode == renderMode_SpriteEffects)
     {
-        outputColor = vec4(mask1, mask2, mask3, 1);
+        outputColor = vec4(pow5(mask1), pow5(mask2), pow5(mask3), 1);
     }
 }

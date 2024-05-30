@@ -12,7 +12,7 @@ out vec3 vNormalOut;
 out vec3 vTangentOut;
 out vec3 vBitangentOut;
 out vec2 vTexCoordOut;
-out vec4 vColorOut;
+out vec4 vVertexColorOut;
 
 #include "common/ViewConstants.glsl"
 uniform mat4 transform;
@@ -34,5 +34,5 @@ void main()
     vBitangentOut = tangent.w * cross(vNormalOut, vTangentOut);
 
     vTexCoordOut = vTEXCOORD;
-    vColorOut = vCOLOR;
+    vVertexColorOut = SrgbGammaToLinear(vCOLOR);
 }

@@ -22,7 +22,7 @@ out vec4 fragColor;
 void main(void) {
     vec4 color = texture(uTexture, uUvOffset + uv * uUvScale);
 
-    vec3 finalColor = uColor * color.rgb;
+    vec3 finalColor = SrgbGammaToLinear(uColor) * color.rgb;
     float blendingFactor = uOverbrightFactor * GetLuma(finalColor.rgb);
 
     fragColor = vec4(finalColor, uAlpha * color.a * blendingFactor);

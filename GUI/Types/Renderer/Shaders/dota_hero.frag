@@ -33,7 +33,7 @@ in vec2 vTexCoordOut;
 out vec4 outputColor;
 
 uniform float g_flAlphaTestReference;
-uniform sampler2D g_tColor;
+uniform sampler2D g_tColor; // SrgbRead(true)
 uniform sampler2D g_tNormal;
 uniform sampler2D g_tMasks1;
 uniform sampler2D g_tMasks2;
@@ -157,50 +157,50 @@ void main()
     // Different render mode definitions
     if (g_iRenderMode == renderMode_Color)
     {
-        outputColor = vec4(color.rgb, 1.0);
+        outputColor.rgb = color.rgb;
     }
     else if (g_iRenderMode == renderMode_Illumination)
     {
-        outputColor = vec4(vec3(illumination), 1.0);
+        outputColor.rgb == illumination.xxx;
     }
     else if (g_iRenderMode == renderMode_BumpMap)
     {
-        outputColor = vec4(PackToColor(vNormalTs), 1.0);
+        outputColor.rgb = SrgbGammaToLinear(PackToColor(vNormalTs));
     }
     else if (g_iRenderMode == renderMode_Tangents)
     {
-        outputColor = vec4(PackToColor(vTangentOut.xyz), 1.0);
+        outputColor.rgb = SrgbGammaToLinear(PackToColor(vTangentOut.xyz));
     }
     else if (g_iRenderMode == renderMode_Normals)
     {
-        outputColor = vec4(PackToColor(vNormalOut), 1.0);
+        outputColor.rgb = SrgbGammaToLinear(PackToColor(vNormalOut));
     }
     else if (g_iRenderMode == renderMode_BumpNormals)
     {
-        outputColor = vec4(PackToColor(worldNormal), 1.0);
+        outputColor.rgb = SrgbGammaToLinear(PackToColor(worldNormal));
     }
     else if (g_iRenderMode == renderMode_Metalness)
     {
-        outputColor = vec4(vec3(metalness), 1.0);
+        outputColor.rgb = SrgbGammaToLinear(metalness.xxx);
     }
     else if (g_iRenderMode == renderMode_Specular)
     {
-        outputColor = vec4(specularColor * specular, 1.0);
+        outputColor.rgb = SrgbGammaToLinear(specularColor * specular);
     }
     else if (g_iRenderMode == renderMode_RimLight)
     {
-        outputColor = vec4(color.rgb * rimLight, 1.0);
+        outputColor.rgb = color.rgb * rimLight;
     }
 #if F_MASKS_1
     else if (g_iRenderMode == renderMode_Mask1)
     {
-        outputColor = vec4(mask1.rgb, 1.0);
+        outputColor.rgb = SrgbGammaToLinear(mask1.rgb);
     }
 #endif
 #if F_MASKS_2
     else if (g_iRenderMode == renderMode_Mask2)
     {
-        outputColor = vec4(mask2.rgb, 1.0);
+        outputColor.rgb = SrgbGammaToLinear(mask2.rgb);
     }
 #endif
 }
