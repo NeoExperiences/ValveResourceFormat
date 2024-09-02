@@ -2,8 +2,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using Microsoft.Win32;
 using ValveKeyValue;
+using ValveResourceFormat.IO;
 
 namespace GUI.Utils
 {
@@ -132,9 +132,14 @@ namespace GUI.Utils
             Config.RecentFiles ??= new(RecentFilesLimit);
             Config.Update ??= new();
 
-            if (string.IsNullOrEmpty(Config.OpenDirectory) && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (string.IsNullOrEmpty(Config.OpenDirectory))
             {
-                Config.OpenDirectory = Path.Join(GetSteamPath(), "steamapps", "common");
+                var steamPath = Path.Join(GameFolderLocator.SteamPath, "steamapps", "common");
+
+                if (Directory.Exists(steamPath))
+                {
+                    Config.OpenDirectory = steamPath;
+                }
             }
 
             if (Config.MaxTextureSize <= 0)
@@ -242,27 +247,6 @@ namespace GUI.Utils
         {
             Config.RecentFiles.Clear();
             Save();
-        }
-
-        public static string GetSteamPath()
-        {
-            try
-            {
-                using var key =
-                    Registry.CurrentUser.OpenSubKey("SOFTWARE\\Valve\\Steam") ??
-                    Registry.LocalMachine.OpenSubKey("SOFTWARE\\Valve\\Steam");
-
-                if (key?.GetValue("SteamPath") is string steamPath)
-                {
-                    return Path.GetFullPath(steamPath);
-                }
-            }
-            catch
-            {
-                // Don't care about registry exceptions
-            }
-
-            return string.Empty;
         }
     }
 }
